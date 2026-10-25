@@ -71,6 +71,7 @@ void TestLinuxCommandBuilder() {
     Check(BuildRemoteSshCommand("dev@host", LinuxCommandKind::ServiceRestart, "nginx.service") == "LC_ALL=C systemctl restart nginx.service", "service restart fixed command");
     Check(BuildRemoteSshCommand("dev@host", LinuxCommandKind::ServiceStart, "-oProxyCommand=bad") == "", "reject option injection unit");
     Check(BuildRemoteSshCommand("dev@host", LinuxCommandKind::ServiceStart, "nginx;id.service") == "", "reject shell metacharacter unit");
+    Check(BuildRemoteSshCommand("dev@host", LinuxCommandKind::ServiceStart, "*.service") == "", "reject shell glob unit");
     Check(BuildRemoteSshCommand("dev@host", LinuxCommandKind::ServiceStart, "nginx") == "", "reject unit without suffix");
     Check(BuildRemoteSshCommand("-oProxyCommand=bad", LinuxCommandKind::PortList, "") == "", "reject option-injection ssh target");
     Check(BuildRemoteSshCommand("dev@host", LinuxCommandKind::ProcessTerminate, "1234") == "LC_ALL=C kill -TERM 1234", "process terminate fixed command");
