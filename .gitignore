@@ -1,0 +1,10 @@
+/build/
+/out/
+*.user
+*.suo
+*.db
+*.db-wal
+*.db-shm
+*.log
+/openclaw-*-info.txt
+/openclaw-126 info.txt

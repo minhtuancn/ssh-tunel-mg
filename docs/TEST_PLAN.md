@@ -1,6 +1,6 @@
 # Test Plan — SSH Tunnel Manager v1.0
 
-**Status:** planned; no application test suite currently exists. Release requires evidence from real Windows x64 and controlled Linux environments.
+**Status:** assertion-based CTest baseline is active. `self_check` exercises numeric validation, host/unit validation, Win32 argv quoting, and Linux fixed-command builders (ports/services/processes; validates untrusted unit/PID/SSH-target params). MinGW run passes; release still requires evidence from MSVC x64 Windows and controlled Linux environments.
 
 ## Traceability
 

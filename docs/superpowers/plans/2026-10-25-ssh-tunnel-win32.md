@@ -177,7 +177,8 @@ T2–T10 → T11 (security/integration) → T12 (package/release)
 - [ ] Bắt đầu từ tối thiểu một main window + menu + status label; phân tách UI thread/message loop.
 - [ ] Build script có `-Configure`, `-Build`, `-Test`, `-Package`, `-Clean` (Clean chỉ xóa build artifacts đã xác định, không đụng user data).
 - [ ] Tạo test runner CTest, code warnings/Release x64, không cần runtime PowerShell/.NET.
-- [ ] Chạy `./build.ps1 -Build` và `./build.ps1 -Test` bằng PowerShell trên máy dev Windows; test launch `.exe` thực tế.
+- [x] Chạy `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release`, `cmake --build build --parallel`, `ctest --test-dir build --output-on-failure`; MinGW x64 Release build và self-check pass. GUI launch smoke xác nhận title `SSH Tunnel Manager` và graceful close.
+- [ ] Chạy `./build.ps1 -Action Test` bằng MSVC x64 trên Windows. **BLOCKED:** thiếu compiler workload; MinGW không thay acceptance MSVC.
 - [ ] Ghi exact compiler/SDK/CMake versions và build command trong docs.
 
 **Done:** `SSHTunnelManager.exe` mở/đóng được trên Windows thật, không crash, CTest xanh; nếu không có Windows → BLOCKED.
