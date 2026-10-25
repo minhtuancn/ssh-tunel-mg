@@ -32,8 +32,7 @@ Deliver native C++17 Win32 x64 SSH tunnel manager for Windows 10/11. Product sou
 4. Run authoritative build/tests with MSVC once available; record compiler/SDK versions in docs.
 5. Follow the task dependencies, no overlapping file ownership for parallel agents, update status and evidence after every task.
 
-Current milestone: T1/T2 code slice committed as `5b0e830`, PR #1 merged to `main` at `8481e6c`. Then branch on merged main for T3. PR URL: `https://github.com/minhtuancn/ssh-tunel-mg/pull/1`.
-Follow-up commit `d5daf8a` rejects `*?[]{}` in systemd unit names; regression test first failed, then passed.
+Current milestone: PR #1 (`5b0e830`, merge `8481e6c`) and PR #2 (`d5daf8a`, merge `97020df`) merged. T2 regression test failed first for `*.service`, then passed after rejecting shell expansions. Latest status-doc update is pending next PR.
 
 ## Commands
 
