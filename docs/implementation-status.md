@@ -8,26 +8,26 @@
 
 | Area | State | Evidence / blocker | Next action |
 |---|---|---|---|
-| Application source | TODO | Không có `src/`, CMake project hoặc executable. | Task 1 — native skeleton. |
+| Application source | PARTIAL | Có `CMakeLists.txt`, `src/main.cpp`, `src/domain/validation.*`, test skeleton và `build.ps1`; MinGW x64 Release build + GUI launch smoke pass; CTest 1/1 pass. Đây chưa phải yêu cầu MSVC build. | Hoàn tất MSVC Release build; tiếp tục modules T2+ theo plan. |
 | Existing utility | PARTIAL | Có `tunnel.bat`, `tunnel-v1.bat`, `tunnel-103.bat`, `tunnel-126.bat`; chỉ triển khai batch/PowerShell SSH launcher. | Giữ nguyên; dùng làm behavior reference. |
 | Product spec v2 | DONE | Đã đọc toàn bộ file `*-design-v2.md` (285 dòng); đây là trạng thái tài liệu, không phải feature implementation. | Dùng làm product baseline. |
 | Implementation plan v2 | DONE | Đã đọc toàn bộ file `*-win32-v2.md` (410 dòng), Task 0–12 và A01–A18. | Dùng làm task baseline, áp dụng bổ sung trong master plan. |
 | Canonical path alignment | PARTIAL | Yêu cầu chỉ định path không hậu tố `-v2`; workspace giữ cả bản cũ và bản v2. Chưa ghi đè bản cũ. | Duy trì v2 là nguồn chuẩn; chuẩn hóa tham chiếu, chỉ promote khi được duyệt. |
-| Tests | TODO | Không có `tests/`, CTest hoặc test runner. | Tạo theo Task 1 trở đi. |
-| Build | BLOCKED | Có CMake 4.2.1, Ninja 1.13.2, OpenSSH hệ thống 9.5p2; không tìm thấy `cl.exe`, `msbuild.exe` hoặc Visual Studio C++ tools. | Cài/khởi chạy môi trường MSVC x64 trước Windows build. Không dùng OpenSSH hệ thống để chứng minh gói độc lập. |
-| Linux integration | BLOCKED | Không có cấu hình/evidence host Linux test. | Cấp disposable Linux SSH host và service/process fixtures trước integration gate. |
+| Tests | PARTIAL | Có CTest `self_check`: port/PID/host/systemd unit và Windows argv quoting. 1/1 pass với MinGW; MSVC chưa xác minh. | Mở rộng tests theo T2–T12; chạy authoritative suite bằng MSVC. |
+| Build | PARTIAL | CMake/Ninja + MinGW 15.2.0 x64 Release build và CTest 1/1 pass; GUI launch/close smoke pass. VS Build Tools 17.14.42 có nhưng component `Microsoft.VisualStudio.Component.VC.Tools.x86.x64` vắng; installer log `SelectionState: NotSelected`, no `cl.exe`/SDK; không elevated. | Admin cần thêm workload `Microsoft.VisualStudio.Workload.VCTools`, MSVC x64 tools + Windows SDK. MinGW không thay acceptance MSVC. Không dùng OpenSSH hệ thống để chứng minh gói độc lập. |
+| Linux integration | PARTIAL | SSH `dev@10.20.10.103` trả `SSH_OK` bằng `BatchMode=yes`, `StrictHostKeyChecking=yes`; remote `uname -s` là Linux, `ss` có và trả listener thực. Chưa xác minh distro/version hoặc chạy operation phá hủy. | Dùng host cho read-only integration tests; xác nhận môi trường disposable trước systemd/process mutations. |
 | Git | BLOCKED | Thư mục hiện tại không phải Git repository (`git status` trả fatal); không có branch, commit, PR hoặc CI workflow trong workspace. | Xác định repo/remote và khởi tạo workflow có chủ sở hữu trước code/PR. |
-| GitHub issues | NOT VERIFIED | GitHub CLI đăng nhập, nhưng không có repository local/remote để xác định repo issues liên quan. | Sau khi xác định repo, rà soát issue trước khi tạo; chưa tạo issue. |
-| Security follow-up | TODO | `openclaw-126 info.txt` chứa token trong URL; không đưa giá trị vào tài liệu hoặc logs. | Thu hồi/rotate token đã lộ; xóa file hoặc redact token theo chủ sở hữu. |
+| GitHub issues | NOT VERIFIED | Remote `origin` hiện là `https://github.com/minhtuancn/ssh-tunel-mg.git` (public, empty, default branch `main`); đã push `main` thành công; chưa có issues/PR/CI. | Đồng bộ feature branch/PR khi code đã xác minh; tạo issue theo nhu cầu sau khi PR đầu tiên merge. |
+| Security follow-up | BLOCKED | `openclaw-126 info.txt` không còn ở workspace, chưa từng tracked/commit; token đã lộ theo lịch sử handoff nhưng không có quyền/provider access để xác nhận revoke. | Chủ sở hữu revoke/rotate token qua dịch vụ phát hành; giữ file trong `.gitignore`; secret-scan trước commit/push. |
 
 ## Task state
 
 | Task | Priority | Dependencies | State | Evidence | Blocker | Next action |
 |---|---|---|---|---|---|---|
 | T0 Contract/spec baseline | P0 | — | PARTIAL | Spec/plan v2 tồn tại, đã đọc; bổ sung matrix và alignment còn pending. | Canonical path ambiguity; repo không có Git. | Chuẩn hóa file baseline và hoàn thiện docs trước coding. |
-| T1 Native build skeleton | P0 | T0 | TODO | Chưa có source/build. | MSVC chưa xác minh/cài đặt. | Tạo CMake + Win32 skeleton; chạy trên Windows/MSVC thật. |
-| T2 Models/validation/commands | P0 | T1 | TODO | Chưa có code/tests. | — | Test-first validation + command safety. |
-| T3 SSH process runner | P0 | T1,T2 | TODO | Chưa có code/tests. | Windows process tests cần MSVC/Windows. | Bounded pipe draining, RAII, cancellation. |
+| T1 Native build skeleton | P0 | T0 | PARTIAL | MinGW x64 CMake/Ninja Release build pass; `self_check` 1/1; process smoke title `SSH Tunnel Manager`, graceful close. | VS 17.14.42 registered, but VCTools workload/component absent (`vswhere -requires ...VC.Tools.x86.x64` empty); session not elevated, installer elevation attempt returned 1; no compiler. | User/Admin must complete Visual Studio Installer VCTools + x64 compiler + Windows SDK. Then run `build.ps1 -Action Test` with MSVC. |
+| T2 Models/validation/commands | P0 | T1 | PARTIAL | RED→GREEN: port/PID/host/unit tests + Windows argv quoting + Linux fixed-command builders (ports/services/processes) pass 1/1 CTest (MinGW). | typed `SshTarget`/`UnitName`/`TargetHost`/`LocalBind` structs; SSH argv builder; malicious fixture sweep còn lại. | Bổ sung typed structs + SSH argv builder + fixtures; chạy lại suite. |
+| T3 SSH process runner | P0 | T1,T2 | TODO | Chưa có process runner. | MSVC required for authoritative Win32 handle/pipe tests. | Bắt đầu test helper + RAII handle/async pipe. |
 | T4 OpenSSH/auth | P0 | T3 | TODO | Chưa có bundled binaries/manifest. | Chốt upstream binary provenance/runtime dependencies. | Bundle audit + auth/host-key tests. |
 | T5 TCP tunnel | P0 | T2,T3,T4 | TODO | Chưa có tunnel code/test host. | Linux gateway + reachable target fixture. | End-to-end forwarding and ownership. |
 | T6 Port discovery | P0 | T2,T3,T4 | TODO | Chưa có Linux parser/query. | Linux SSH test host. | `ss` fixtures then integration. |
@@ -40,4 +40,4 @@
 
 ## Handoff
 
-Next executable action: complete T0 document alignment and issue mapping once repository identity is supplied. First coding task after planning approval: **T1 Native build skeleton**, blocked until MSVC x64 availability is established. No implementation task is marked DONE.
+Next executable action: finish T2 typed models/SSH argv builder, then T3 async SSH process runner. MSVC compiler install requires admin; known SSH host reachable for read-only integration. No application task is marked DONE.

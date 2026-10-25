@@ -6,12 +6,15 @@ Deliver native C++17 Win32 x64 SSH tunnel manager for Windows 10/11. Product sou
 
 ## Verified workspace state (2026-10-25)
 
-- Workspace contains four batch files, an `openclaw-126 info.txt`, v1 spec/plan, and v2 spec/plan only. No C++ source, CMake project, README, tests, CI workflows or package.
-- Workspace is **not a Git repository**. No branch, commit, PR, issue mapping, CI state or safe commit available here.
-- Tools observed: CMake 4.2.1, Ninja 1.13.2, system OpenSSH 9.5p2, GitHub CLI authenticated. No `cl.exe` or `msbuild.exe` found; Windows/MSVC build is BLOCKED/NOT VERIFIED.
-- No Linux integration host configured; real SSH/service/process tests are BLOCKED.
+- Workspace has C++17 Win32 skeleton (`CMakeLists.txt`, `src/main.cpp`), validators/Win32 argv quoting/Linux fixed-command builders, CTest, `build.ps1`, and `.gitignore`; four legacy batch files and planning docs retained.
+- Git repo remote: `https://github.com/minhtuancn/ssh-tunel-mg.git`; public repo was empty, no issues/PRs/workflows. Current branch `feature/win32-foundation`; local baseline commit `74d8954`; `main` pushed to remote.
+- Tools observed: CMake 4.2.1, Ninja 1.13.2, system OpenSSH 9.5p2, GitHub CLI authenticated. VS Build Tools 17.14.42 installed, but no `cl.exe` and `vswhere` does not find `Microsoft.VisualStudio.Component.VC.Tools.x86.x64`; MSVC build is BLOCKED/NOT VERIFIED.
+- MinGW Ninja Release build succeeds locally and GUI process smoke confirms window title `SSH Tunnel Manager`; this does not satisfy required MSVC build.
+- SSH `dev@10.20.10.103` verified reachable with `BatchMode=yes` + `StrictHostKeyChecking=yes` (prints `SSH_OK`). Remote is Linux with `ss`, `systemd`; read-only probes pass. Not yet verified for destructive/systemd/process integration.
+- MSVC blocker root cause: VCTools workload/component never installed (`SelectionState: NotSelected`, `RequestedState: Absent`); installer elevation attempt from non-admin session returned exit 1 and produced no new setup logs.
+- Linux host reachable, but target control/disposable status not confirmed; destructive mutations remain BLOCKED.
 - No implementation task is DONE. See `docs/implementation-status.md` for evidence/status.
-- `openclaw-126 info.txt` includes a token URL. Do not reproduce it. Owner must revoke/rotate token and redact/remove sensitive artifact.
+- Credential: token-bearing `openclaw-126 info.txt` is absent from workspace, never tracked/staged/committed; Git history search found no matching file. Token validity/revocation cannot be checked without provider access. Owner must revoke/rotate token; do not assume it is safe.
 
 ## Architecture decisions
 
@@ -23,10 +26,10 @@ Deliver native C++17 Win32 x64 SSH tunnel manager for Windows 10/11. Product sou
 
 ## Next steps
 
-1. Confirm/canonicalize repository root and Git remote. Current directory is not a repository, so do not create branches/issues or claim CI status.
-2. Reconcile v2 snapshot names with canonical paths requested by product; preserve old v1 docs until promotion is approved.
-3. Establish MSVC x64 environment and controlled Linux SSH integration host.
-4. Begin Task 1 only after T0 contract/docs acceptance; report exact build/test output. T1 remains blocked by toolchain in this session.
+1. Complete T2 Linux fixed-command builders + fixtures, then start T3 SSH process runner (RAII handles, bounded pipes, cancellation).
+2. Maintain branch/PR flow: push `feature/win32-foundation`, open PR to `main`, merge only with green tests.
+3. Establish MSVC x64 environment (admin Visual Studio Installer: add `Microsoft.VisualStudio.Workload.VCTools` + x64 compiler + Windows SDK) and a controlled/disposable Linux SSH integration host.
+4. Run authoritative build/tests with MSVC once available; record compiler/SDK versions in docs.
 5. Follow the task dependencies, no overlapping file ownership for parallel agents, update status and evidence after every task.
 
 ## Commands
