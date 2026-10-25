@@ -26,13 +26,13 @@ Deliver native C++17 Win32 x64 SSH tunnel manager for Windows 10/11. Product sou
 
 ## Next steps
 
-1. Complete T2 Linux fixed-command builders + fixtures, then start T3 SSH process runner (RAII handles, bounded pipes, cancellation).
-2. Maintain branch/PR flow: push `feature/win32-foundation`, open PR to `main`, merge only with green tests.
+1. Continue T3: current synchronous process runner is a prototype; implement async pipe draining, cancellation and ownership cleanup, then verify on MSVC.
+2. Maintain branch/PR flow: current branch `feature/ssh-process-runner`; open PR to `main`, merge only with green tests.
 3. Establish MSVC x64 environment (admin Visual Studio Installer: add `Microsoft.VisualStudio.Workload.VCTools` + x64 compiler + Windows SDK) and a controlled/disposable Linux SSH integration host.
 4. Run authoritative build/tests with MSVC once available; record compiler/SDK versions in docs.
 5. Follow the task dependencies, no overlapping file ownership for parallel agents, update status and evidence after every task.
 
-Current milestone: PR #1 (`5b0e830`, merge `8481e6c`) and PR #2 (`d5daf8a`, merge `97020df`) merged. T2 regression test failed first for `*.service`, then passed after rejecting shell expansions. Latest status-doc update is pending next PR.
+Current milestone: PR #1 (`5b0e830`, merge `8481e6c`) and PR #2 (`d5daf8a`, merge `97020df`) merged; PR #3 docs merge `d4f2326`. T2 regression test failed first for `*.service`, then passed after rejecting shell expansions. T3 synchronous process prototype committed `c0f98b2` on branch `feature/ssh-process-runner`; 2/2 CTest pass, NOT DONE. Async lifecycle remains.
 
 ## Commands
 
