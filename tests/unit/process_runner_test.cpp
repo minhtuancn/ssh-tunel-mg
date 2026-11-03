@@ -23,7 +23,7 @@ void Check(bool condition, const char* name) {
 
 void TestBasicRun() {
     ssh_tunnel::ProcessConfig cfg;
-    cfg.executable = L"build/bin/process_helper.exe";
+    cfg.executable = L"process_helper.exe";
     cfg.arguments = {L"exit"};
     cfg.timeoutMs = 2000;
     std::atomic<bool> cancel{false};
@@ -38,7 +38,7 @@ void TestBasicRun() {
 
 void TestExitCodePropagation() {
     ssh_tunnel::ProcessConfig cfg;
-    cfg.executable = L"build/bin/process_helper.exe";
+    cfg.executable = L"process_helper.exe";
     cfg.arguments = {L"exit-code", L"42"};
     cfg.timeoutMs = 2000;
     std::atomic<bool> cancel{false};
@@ -49,7 +49,7 @@ void TestExitCodePropagation() {
 
 void TestStdoutCapture() {
     ssh_tunnel::ProcessConfig cfg;
-    cfg.executable = L"build/bin/process_helper.exe";
+    cfg.executable = L"process_helper.exe";
     cfg.arguments = {L"stdout", L"100"};
     cfg.timeoutMs = 2000;
     std::atomic<bool> cancel{false};
@@ -63,7 +63,7 @@ void TestStdoutCapture() {
 
 void TestStderrCapture() {
     ssh_tunnel::ProcessConfig cfg;
-    cfg.executable = L"build/bin/process_helper.exe";
+    cfg.executable = L"process_helper.exe";
     cfg.arguments = {L"stderr", L"50"};
     cfg.timeoutMs = 2000;
     std::atomic<bool> cancel{false};
@@ -77,7 +77,7 @@ void TestStderrCapture() {
 
 void TestBothStreams() {
     ssh_tunnel::ProcessConfig cfg;
-    cfg.executable = L"build/bin/process_helper.exe";
+    cfg.executable = L"process_helper.exe";
     cfg.arguments = {L"both", L"75"};
     cfg.timeoutMs = 2000;
     std::atomic<bool> cancel{false};
@@ -90,7 +90,7 @@ void TestBothStreams() {
 
 void TestInfiniteOutputTimeout() {
     ssh_tunnel::ProcessConfig cfg;
-    cfg.executable = L"build/bin/process_helper.exe";
+    cfg.executable = L"process_helper.exe";
     cfg.arguments = {L"infinite"};
     cfg.timeoutMs = 200;
     cfg.stdoutLimitBytes = 1024;
@@ -103,7 +103,7 @@ void TestInfiniteOutputTimeout() {
 
 void TestTimeout() {
     ssh_tunnel::ProcessConfig cfg;
-    cfg.executable = L"build/bin/process_helper.exe";
+    cfg.executable = L"process_helper.exe";
     cfg.arguments = {L"sleep", L"2000"};
     cfg.timeoutMs = 200;  // much shorter than sleep
     std::atomic<bool> cancel{false};
@@ -115,7 +115,7 @@ void TestTimeout() {
 
 void TestCancel() {
     ssh_tunnel::ProcessConfig cfg;
-    cfg.executable = L"build/bin/process_helper.exe";
+    cfg.executable = L"process_helper.exe";
     cfg.arguments = {L"sleep", L"2000"};
     cfg.timeoutMs = 5000;  // long timeout
     std::atomic<bool> cancel{false};
@@ -130,9 +130,40 @@ void TestCancel() {
     Check(!result.timedOut, "cancel distinct from timeout");
 }
 
+void TestZeroTimeoutMeansNoTimeout() {
+    ssh_tunnel::ProcessConfig cfg;
+    cfg.executable = L"process_helper.exe";
+    cfg.arguments = {L"sleep", L"150"};
+    cfg.timeoutMs = 0;  // long-lived process: no timeout
+    std::atomic<bool> cancel{false};
+
+    auto result = ssh_tunnel::RunSshProcess(cfg, cancel);
+    Check(!result.timedOut, "zero timeout disables the deadline");
+    Check(!result.cancelled, "zero timeout run not cancelled");
+    Check(result.exitCode == 0, "zero timeout run completes");
+}
+
+void TestExternalCancel() {
+    ssh_tunnel::ProcessConfig cfg;
+    cfg.executable = L"process_helper.exe";
+    cfg.arguments = {L"sleep", L"2000"};
+    cfg.timeoutMs = 0;
+    std::atomic<bool> cancel{false};
+    std::atomic<bool> external_cancel{false};
+
+    std::thread canceller([&external_cancel] {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        external_cancel.store(true, std::memory_order_release);
+    });
+    auto result = ssh_tunnel::RunSshProcess(cfg, cancel, &external_cancel);
+    canceller.join();
+    Check(result.cancelled, "external cancellation token terminates process");
+    Check(!result.timedOut, "external cancel distinct from timeout");
+}
+
 void TestTruncation() {
     ssh_tunnel::ProcessConfig cfg;
-    cfg.executable = L"build/bin/process_helper.exe";
+    cfg.executable = L"process_helper.exe";
     // 2 MiB exceeds this test's 1 MiB stdout limit.
     cfg.stdoutLimitBytes = 1024 * 1024;
     cfg.arguments = {L"stdout", L"2097152"};  // 2 MiB
@@ -153,6 +184,9 @@ int main() {
     TestStderrCapture();
     TestBothStreams();
     TestTimeout();
+    TestCancel();
+    TestZeroTimeoutMeansNoTimeout();
+    TestExternalCancel();
     TestInfiniteOutputTimeout();
     TestTruncation();
     if (failures != 0) {
