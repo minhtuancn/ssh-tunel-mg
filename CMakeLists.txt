@@ -1,9 +1,13 @@
 cmake_minimum_required(VERSION 3.25)
 project(SSHTunnelManager
     VERSION 1.0.0
-    LANGUAGES CXX
+    LANGUAGES CXX C RC
     DESCRIPTION "Native Win32 SSH Tunnel Manager for Windows"
 )
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
 
 # Enforce x64 and Windows
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -55,8 +59,21 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 option(BUILD_TESTS "Build unit tests" ON)
 option(BUNDLE_OPENSSH "Bundle OpenSSH binaries" ON)
 
-# Native GUI target. SQLite is added with the storage task.
-add_executable(SSHTunnelManager WIN32 src/main.cpp)
+# Native GUI target.
+add_executable(SSHTunnelManager WIN32 src/main.cpp
+    src/ssh/ssh_process.cpp
+    src/ssh/ssh_auth.cpp
+    src/ssh/ssh_arguments.cpp
+    src/ssh/ssh_known_hosts.cpp
+    src/ssh/ssh_tunnel.cpp
+    src/ssh/ssh_port_discovery.cpp
+    src/ssh/ssh_systemd.cpp
+    src/ssh/ssh_process_mgmt.cpp
+    src/storage/sqlite_db.cpp
+    third_party/sqlite3/sqlite3.c
+    src/ui/main_window.cpp
+    src/ui/resources.rc
+)
 target_compile_definitions(SSHTunnelManager PRIVATE
     _WIN32_WINNT=0x0A00
     UNICODE
@@ -64,13 +81,46 @@ target_compile_definitions(SSHTunnelManager PRIVATE
     WIN32_LEAN_AND_MEAN
     NOMINMAX
 )
-target_link_libraries(SSHTunnelManager PRIVATE comctl32 shell32)
+# windres (MinGW) splits -I arguments that contain spaces before handing them
+# to cc1, which breaks builds from paths like "C:/.../code tunnel/...". The
+# resource script only needs the system SDK headers, so keep these include
+# directories out of the RC compile.
+target_include_directories(SSHTunnelManager PRIVATE
+    $<$<NOT:$<COMPILE_LANGUAGE:RC>>:${CMAKE_CURRENT_SOURCE_DIR}/src/ssh>
+    $<$<NOT:$<COMPILE_LANGUAGE:RC>>:${CMAKE_CURRENT_SOURCE_DIR}/src/storage>
+    $<$<NOT:$<COMPILE_LANGUAGE:RC>>:${CMAKE_CURRENT_SOURCE_DIR}/src/ui>
+    $<$<NOT:$<COMPILE_LANGUAGE:RC>>:${CMAKE_CURRENT_SOURCE_DIR}/third_party/sqlite3>
+)
+
+target_link_libraries(SSHTunnelManager PRIVATE comctl32 shell32 ws2_32 iphlpapi)
+
+# OpenSSL / bundled SSH dependency flags (conditionally set).
+if(BUNDLE_OPENSSH)
+    target_compile_definitions(SSHTunnelManager PRIVATE
+        BUNDLE_OPENSSH
+        _SSH_BINARY_PATH=\"/resources/openssh/openssh.exe\"
+    )
+    # Add the resources directory to the runtime search path so the
+    # bundled openssh.exe can be found at runtime when the executable
+    # is launched from the build directory.
+    target_link_libraries(SSHTunnelManager PRIVATE
+        advapi32
+    )
+endif()
 
 if(MSVC)
     target_compile_options(SSHTunnelManager PRIVATE /W4 /WX /permissive- /guard:cf)
     target_link_options(SSHTunnelManager PRIVATE /DYNAMICBASE /NXCOMPAT /GUARD:CF)
 elseif(MINGW)
-    target_link_options(SSHTunnelManager PRIVATE -municode)
+    # Ship a self-contained executable: without static runtime linking the exe
+    # needs libstdc++-6.dll / libgcc_s_seh-1.dll / libwinpthread-1.dll, which
+    # are not present next to the binary and make double-click launch fail.
+    target_link_options(SSHTunnelManager PRIVATE
+        -municode
+        -static
+        -static-libgcc
+        -static-libstdc++
+    )
 endif()
 
 if(BUILD_TESTS)
