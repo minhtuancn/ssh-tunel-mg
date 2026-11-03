@@ -27,6 +27,11 @@ struct ProcessResult {
     std::wstring error;
 };
 
-ProcessResult RunSshProcess(const ProcessConfig& config, const std::atomic<bool>& cancelRequested);
+// Runs a child process and captures bounded stdout/stderr.
+// A timeoutMs of 0 disables the timeout (used for long-lived SSH tunnels).
+// Cancellation is signalled by either flag; both must outlive the call.
+ProcessResult RunSshProcess(const ProcessConfig& config,
+                            const std::atomic<bool>& cancelRequested,
+                            const std::atomic<bool>* externalCancel = nullptr);
 
 } // namespace ssh_tunnel

@@ -36,7 +36,9 @@ bool CloseHandleSafe(HANDLE h) {
 
 } // namespace
 
-ProcessResult RunSshProcess(const ProcessConfig& config, const std::atomic<bool>& cancelRequested) {
+ProcessResult RunSshProcess(const ProcessConfig& config,
+                            const std::atomic<bool>& cancelRequested,
+                            const std::atomic<bool>* externalCancel) {
     ProcessResult result;
 
     if (config.executable.empty()) {
@@ -129,13 +131,28 @@ ProcessResult RunSshProcess(const ProcessConfig& config, const std::atomic<bool>
         }
     };
 
-    auto endTime = GetTickCount64() + config.timeoutMs;
+    // timeoutMs == 0 means "no timeout" (long-lived tunnels).
+    const bool hasTimeout = config.timeoutMs > 0;
+    const ULONGLONG endTime = GetTickCount64() + config.timeoutMs;
     bool processExited = false;
 
+    auto isCancelled = [&]() {
+        return cancelRequested.load(std::memory_order_acquire) ||
+               (externalCancel && externalCancel->load(std::memory_order_acquire));
+    };
+
+    auto terminateAndDrain = [&]() {
+        TerminateProcess(pi.hProcess, 1);
+        // Give the child a moment to die so remaining pipe data is complete.
+        WaitForSingleObject(pi.hProcess, 5000);
+        drainPipe(stdoutRead, result.stdoutData, config.stdoutLimitBytes, result.truncatedStdout, "stdout");
+        drainPipe(stderrRead, result.stderrData, config.stderrLimitBytes, result.truncatedStderr, "stderr");
+    };
+
     while (!processExited) {
-        if (cancelRequested.load(std::memory_order_acquire)) {
+        if (isCancelled()) {
             result.cancelled = true;
-            TerminateProcess(pi.hProcess, 1);
+            terminateAndDrain();
             break;
         }
 
@@ -148,12 +165,9 @@ ProcessResult RunSshProcess(const ProcessConfig& config, const std::atomic<bool>
         drainPipe(stdoutRead, result.stdoutData, config.stdoutLimitBytes, result.truncatedStdout, "stdout");
         drainPipe(stderrRead, result.stderrData, config.stderrLimitBytes, result.truncatedStderr, "stderr");
 
-        if (!processExited && GetTickCount64() >= endTime) {
+        if (!processExited && hasTimeout && GetTickCount64() >= endTime) {
             result.timedOut = true;
-            TerminateProcess(pi.hProcess, 1);
-            // Drain once more after terminate
-            drainPipe(stdoutRead, result.stdoutData, config.stdoutLimitBytes, result.truncatedStdout, "stdout");
-            drainPipe(stderrRead, result.stderrData, config.stderrLimitBytes, result.truncatedStderr, "stderr");
+            terminateAndDrain();
             break;
         }
     }
