@@ -376,17 +376,20 @@ void MainWindow::layout_page(int index) {
         case 3: toolbar_id = 4000; list_id = 4001; break;
         case 4: toolbar_id = 5000; list_id = 5001; break;
         case 5: toolbar_id = 6000; list_id = 6001; break;
+        case 6: break; // Settings tab has no toolbar/list
         default: return;
     }
 
-    HWND toolbar = GetDlgItem(page, toolbar_id);
-    if (toolbar) {
-        MoveWindow(toolbar, 0, 0, width, 32, TRUE);
-        SendMessageW(toolbar, TB_AUTOSIZE, 0, 0);
-    }
-    HWND list = GetDlgItem(page, list_id);
-    if (list) {
-        MoveWindow(list, 0, 35, width, height - 35, TRUE);
+    if (index != 6) {
+        HWND toolbar = GetDlgItem(page, toolbar_id);
+        if (toolbar) {
+            MoveWindow(toolbar, 0, 0, width, 32, TRUE);
+            SendMessageW(toolbar, TB_AUTOSIZE, 0, 0);
+        }
+        HWND list = GetDlgItem(page, list_id);
+        if (list) {
+            MoveWindow(list, 0, 35, width, height - 35, TRUE);
+        }
     }
 }
 

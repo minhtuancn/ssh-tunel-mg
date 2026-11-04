@@ -5,6 +5,9 @@
 
 #define IDC_STATIC -1
 
+// Application icon
+#define IDI_APP_ICON 101
+
 // Dialog and control IDs. Keep in sync with the MainWindow enum in
 // src/ui/main_window.h.
 #define IDD_PROFILE_DIALOG 101
@@ -23,6 +26,9 @@
 #define IDC_EDIT_KEEPALIVE 1013
 #define IDC_EDIT_TIMEOUT 1014
 #define IDC_CHK_ENABLED 1015
+
+// Application icon - using standard Windows icon (IDI_APPLICATION)
+// Custom icon can be added here: IDI_APP_ICON ICON "app_icon.ico"
 
 // Profile Dialog
 IDD_PROFILE_DIALOG DIALOGEX 0, 0, 450, 400
