@@ -229,7 +229,10 @@ LRESULT CALLBACK MainWindow::wnd_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                     MoveWindow(self->tab_control_, 0, 0,
                                client.right, client.bottom, TRUE);
 
-                    RECT rc = client;
+                    // Get the tab control's display area (client area below tab headers)
+                    // in tab control coordinates
+                    RECT rc = {0};
+                    GetClientRect(self->tab_control_, &rc);
                     TabCtrl_AdjustRect(self->tab_control_, FALSE, &rc);
 
                     for (int i = 0; i < 7; ++i) {
